@@ -19,8 +19,8 @@ canvas{border:4px solid #ffd166;border-radius:12px;max-width:95vw;background:#8e
 <div class="ft">Tài trợ: <b>Tạp Hóa Vui Vẻ & Tiệm Kem Ngã Tư Ea Kao</b></div>
 <script>
 var c=document.getElementById("c"),ctx=c.getContext("2d");
-var py=210,pv=0,g=0.28,jp=-5.5,px=65,pr=15,obs=[],fc=0,sc=0,over=false,start=false,hit="",wv=0,colIdx=0,lastLv=0,lvTimer=0,deadTime=0,gateX=150;
-var topScores=JSON.parse(localStorage.getItem("ek_top3")||"[0,0,0]");
+var py=210,pv=0,g=0.28,jp=-5.5,px=65,pr=14,obs=[],sc=0,over=false,start=false,hit="",wv=0,colIdx=0,lastLv=0,lvTimer=0,deadTime=0,gateX=150;
+var topScores=JSON.parse(localStorage.getItem("ek_top3")||"");
 var gObs=[{n:"Bụi Gai",i:"🌵"},{n:"Trơn Trượt",i:"💧"},{n:"Dê Đen",i:"🐐"},{n:"Cá Sấu",i:"🐊"},{n:"Cá Trắm",i:"🐟"}];
 var aObs=[{n:"Đại Bàng",i:"🦅"},{n:"Cồng Chiêng",i:"🪘"},{n:"Cá Chép",i:"🐠"}];
 var clouds=[{x:40,y:55,s:0.25},{x:180,y:85,s:0.2},{x:290,y:45,s:0.3}];
@@ -43,11 +43,19 @@ if(over)return;
 hit=reason;over=true;deadTime=Date.now();
 saveScore(sc);
 }
+function spawnCol(lv){
+var gap=Math.max(112,134-lv*0.8);
+var topH=Math.floor(Math.random()*(335-gap))+45;
+var mv=(lv>=2&&Math.random()<(0.2+lv*0.015))?((Math.random()>0.5?1:-1)*(0.3+Math.min(lv*0.03,0.75))):0;
+var lbl=(colIdx%2===0)?"TẠP HÓA VUI VẺ":"PHỐ ĐI BỘ EA KAO";
+colIdx++;
+obs.push({x:340,w:48,t:topH,b:topH+gap,gap:gap,mv:mv,lbl:lbl,a:aObs[Math.floor(Math.random()*3)],g:gObs[Math.floor(Math.random()*5)],p:false});
+}
 function tap(){
 if(!start){start=true;return;}
 if(over){
 if(Date.now()-deadTime<1500)return;
-py=210;pv=0;obs=[];sc=0;fc=0;over=false;hit="";colIdx=0;lastLv=0;lvTimer=0;gateX=150;
+py=210;pv=0;obs=[];sc=0;over=false;hit="";colIdx=0;lastLv=0;lvTimer=0;gateX=150;
 }else{pv=jp;}
 }
 c.addEventListener("touchstart",function(e){e.preventDefault();tap();});
@@ -71,28 +79,21 @@ ctx.fillText("PHỐ ĐI BỘ HỒ EA KAO",gx+75,288);
 function loop(){
 var lv=getLevel(sc);
 if(lv>lastLv){lastLv=lv;lvTimer=90;}
-var spd=2.2+Math.min(lv*0.12,2.8);
+var spd=2.2+Math.min(lv*0.08,1.8);
 wv+=spd*0.6;
 for(var k=0;k<clouds.length;k++){clouds[k].x-=clouds[k].s;if(clouds[k].x<-50)clouds[k].x=360;}
 if(start&&!over){
 pv+=g;py+=pv;gateX-=spd;
-var spawnRate=Math.max(75,Math.floor(120-lv*1.5));
-if(fc>40&&fc%spawnRate===0){
-var gap=Math.max(102,130-lv*1.1);
-var topH=Math.floor(Math.random()*(340-gap))+45;
-var mv=(lv>=2&&Math.random()<(0.25+lv*0.02))?((Math.random()>0.5?1:-1)*(0.35+Math.min(lv*0.05,1.1))):0;
-var lbl=(colIdx%2===0)?"TẠP HÓA VUI VẺ":"PHỐ ĐI BỘ EA KAO";
-colIdx++;
-obs.push({x:330,w:48,t:topH,b:topH+gap,gap:gap,mv:mv,lbl:lbl,a:aObs[Math.floor(Math.random()*3)],g:gObs[Math.floor(Math.random()*5)],p:false});
-}
+var dist=Math.min(185+lv*2,230);
+if(obs.length===0&&gateX<80)spawnCol(lv);
+else if(obs.length>0&&obs[obs.length-1].x<=340-dist)spawnCol(lv);
 for(var i=0;i<obs.length;i++){var o=obs[i];o.x-=spd;
-if(o.mv!==0){o.t+=o.mv;o.b=o.t+o.gap;if(o.t<40||o.b>395)o.mv=-o.mv;}
+if(o.mv!==0){o.t+=o.mv;o.b=o.t+o.gap;if(o.t<42||o.b>392)o.mv=-o.mv;}
 if(px+pr-4>o.x&&px-pr+4<o.x+o.w){if(py-pr+4<o.t)die(o.a.n+" ("+o.lbl+")");if(py+pr-4>o.b)die(o.g.n+" ("+o.lbl+")");}
 if(!o.p&&o.x+o.w<px){sc++;o.p=true;}}
-if(obs.length>0&&obs[0].x<-55)obs.shift();
+if(obs.length>0&&obs.x<-55)obs.shift();
 if(py+pr>420)die("Rơi xuống hồ Ea Kao");
 if(py-pr<0){py=pr;pv=0;}
-fc++;
 }
 var sky=ctx.createLinearGradient(0,0,0,420);sky.addColorStop(0,"#56cfe1");sky.addColorStop(1,"#caf0f8");
 ctx.fillStyle=sky;ctx.fillRect(0,0,330,420);
@@ -125,9 +126,9 @@ ctx.fillStyle="#ffd166";ctx.font="bold 13px Arial";ctx.fillText("Va phải: "+hi
 ctx.fillStyle="#fff";ctx.font="bold 16px Arial";ctx.fillText("Điểm lần này: "+sc+" điểm (Cấp "+lv+")",165,180);
 ctx.fillStyle="#80ed99";ctx.font="bold 14px Arial";ctx.fillText("🏆 BẢNG XẾP HẠNG TOP 3 🏆",165,212);
 ctx.fillStyle="#fff";ctx.font="13px Arial";
-ctx.fillText("🥇 Hạng 1: "+(topScores[0]||0)+" điểm",165,234);
-ctx.fillText("🥈 Hạng 2: "+(topScores[1]||0)+" điểm",165,254);
-ctx.fillText("🥉 Hạng 3: "+(topScores[2]||0)+" điểm",165,274);
+ctx.fillText("🥇 Hạng 1: "+(topScores||0)+" điểm",165,234);
+ctx.fillText("🥈 Hạng 2: "+(topScores||0)+" điểm",165,254);
+ctx.fillText("🥉 Hạng 3: "+(topScores||0)+" điểm",165,274);
 ctx.fillStyle="#b7e4c7";ctx.font="11px Arial";ctx.fillText("Thời gian: "+ts,165,302);
 ctx.fillStyle=canRetry?"#ffd166":"#888";ctx.font="bold 14px Arial";
 ctx.fillText(canRetry?"👉 Chạm màn hình để chơi lại":"⏳ Đang lưu thành tích...",165,342);}
